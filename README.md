@@ -19,15 +19,12 @@ Start looting a box (authorization required)
 Select category
 
 ![](https://i.imgur.com/aCvwIGV.jpg?1)
-
 ![](https://i.imgur.com/Hn5HcDI.jpg?1)
-
 ![](https://i.imgur.com/C2M08Lm.jpg?1)
 
 Insert items into the container
 
 ![](https://i.imgur.com/1Ro9Wh6.jpg?2)
-
 ![](https://i.imgur.com/P5Z6D1v.jpg?1)
 
 No configuration required, all categories items are picked by hand.
