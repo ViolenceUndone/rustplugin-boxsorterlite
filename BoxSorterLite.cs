@@ -7,25 +7,25 @@ using UnityEngine;
 
 namespace Oxide.Plugins
 {
-    [Info("Box Sorter Lite", "haggbart", "1.0.8")]
+    [Info("Box Sorter Lite", "haggbart", "1.0.9")]
     [Description("Sort your loot in boxes using an intuitive interface.")]
-    class BoxSorterLite : RustPlugin
+    internal class BoxSorterLite : RustPlugin
     {
-        private Dictionary<ulong, BoxCategory> _skinbox = new Dictionary<ulong, BoxCategory>();
-        private List<Item> selectedItems;
-        private string boxContentName;
-        private string boxContentCommand;
-        private CuiElementContainer cuiContainer;
         private const string permUse = "boxsorterlite.use";
-        
+        private Dictionary<ulong, BoxCategory> _skinbox = new Dictionary<ulong, BoxCategory>();
+        private string boxContentCommand;
+        private string boxContentName;
+        private CuiElementContainer cuiContainer;
+        private List<Item> selectedItems;
+
         private struct BoxCategory
         {
             public string Name { get; set; }
             public HashSet<int> ItemIds { get; set; }
         }
-        
+
         #region init
-        
+
         protected override void LoadDefaultMessages()
         {
             lang.RegisterMessages(new Dictionary<string, string>
@@ -58,7 +58,7 @@ namespace Oxide.Plugins
         private void InitSorters()
         {
             Puts("Generating default values...");
-            var explosives = new HashSet<int>()
+            var explosives = new HashSet<int>
             {
                 -1878475007, // satchel charge
                 1248356124, // c4
@@ -70,10 +70,11 @@ namespace Oxide.Plugins
                 -1321651331, // explosive ammo
                 349762871 // he grenade
             };
-            var resources = new HashSet<int>(ItemManager.GetItemDefinitions().Where(k => k.category == ItemCategory.Resources).Select(x => x.itemid));
+            var resources = new HashSet<int>(ItemManager.GetItemDefinitions()
+                .Where(k => k.category == ItemCategory.Resources).Select(x => x.itemid));
             resources.Remove(1523195708); // targeting computer
             resources.Remove(634478325); // cctv
-            var refined = new HashSet<int>()
+            var refined = new HashSet<int>
             {
                 317398316, // hqm
                 69511070, // metal fragments
@@ -85,86 +86,70 @@ namespace Oxide.Plugins
                 -265876753 // gunpowder
             };
             resources.ExceptWith(refined);
-            var electronics = new HashSet<int>()
-            {
-                1171735914, // and switch
-                2100007442, // audio alarm
-                -690968985, // blocker
-                -216999575, // counter
-                -502177121, // door controller
-                -1448252298, // electrical branch
-                -939424778, // flasher light
-                -1507239837, // hbhf sensor
-                553270375, // large rechargeable battery
-                2090395347, // large solar panel
-                -798293154, // laser detector
-                -746647361, // memory cell
-                -1286302544, // or switch
-                -1044468317, // rf broadcaster
-                -566907190, // rf pager
-                888415708, // rf receiver
-                -458565393, // root combiner
-                762289806, // siren light
-                -295829489, // small generator
-                -692338819, // small rechargeable battery
-                -563624462, // splitter
-                1951603367, // switch
-                665332906, // timer
-                -144417939, // wire tool
-                1293102274, // xor switch
-                596469572 // rf transmitter
-            };
-            var keys = new HashSet<int>()
+            
+            var electronics = new HashSet<int>(ItemManager.GetItemDefinitions()
+                .Where(k => k.category == ItemCategory.Electrical).Select(x => x.itemid));
+            
+            var keys = new HashSet<int>
             {
                 -629028935, // electric fuse
                 37122747, // green keycard
                 -484206264, // blue keycard
                 -1880870149 // red keycard  
             };
-            var misc = new HashSet<int>(ItemManager.GetItemDefinitions().Where(k => k.category == ItemCategory.Misc).Select(x => x.itemid));
-            misc.ExceptWith(electronics);
+            var misc = new HashSet<int>(ItemManager.GetItemDefinitions().Where(k => k.category == ItemCategory.Misc)
+                .Select(x => x.itemid));
             misc.ExceptWith(keys);
-            var itemids = new HashSet<int>(ItemManager.GetItemDefinitions().Where(k => k.category == ItemCategory.Attire).Select(x => x.itemid));
+            var itemids = new HashSet<int>(ItemManager.GetItemDefinitions()
+                .Where(k => k.category == ItemCategory.Attire).Select(x => x.itemid));
             _skinbox.Add(576569265, new BoxCategory {Name = "clothing", ItemIds = itemids});
-            itemids = new HashSet<int>(ItemManager.GetItemDefinitions().Where(k => k.category == ItemCategory.Weapon).Select(x => x.itemid));
+            itemids = new HashSet<int>(ItemManager.GetItemDefinitions().Where(k => k.category == ItemCategory.Weapon)
+                .Select(x => x.itemid));
             itemids.Remove(1840822026); // remove beancan
             _skinbox.Add(854718942, new BoxCategory {Name = "weapons", ItemIds = itemids});
-            itemids = new HashSet<int>(ItemManager.GetItemDefinitions().Where(k => k.category == ItemCategory.Ammunition).Select(x => x.itemid));
+            itemids = new HashSet<int>(ItemManager.GetItemDefinitions()
+                .Where(k => k.category == ItemCategory.Ammunition).Select(x => x.itemid));
             itemids.ExceptWith(explosives);
             _skinbox.Add(813269955, new BoxCategory {Name = "ammo", ItemIds = itemids});
-            itemids = new HashSet<int>(ItemManager.GetItemDefinitions().Where(k => k.category == ItemCategory.Medical).Select(x => x.itemid));
+            itemids = new HashSet<int>(ItemManager.GetItemDefinitions().Where(k => k.category == ItemCategory.Medical)
+                .Select(x => x.itemid));
             _skinbox.Add(882223700, new BoxCategory {Name = "medicine", ItemIds = itemids});
-            itemids = new HashSet<int>(ItemManager.GetItemDefinitions().Where(k => k.category == ItemCategory.Tool).Select(x => x.itemid));
+            itemids = new HashSet<int>(ItemManager.GetItemDefinitions().Where(k => k.category == ItemCategory.Tool)
+                .Select(x => x.itemid));
             itemids.ExceptWith(explosives);
             _skinbox.Add(1192724938, new BoxCategory {Name = "tools", ItemIds = itemids});
             _skinbox.Add(809171741, new BoxCategory {Name = "resources", ItemIds = resources});
             _skinbox.Add(1353721544, new BoxCategory {Name = "refined", ItemIds = refined});
             _skinbox.Add(798455489, new BoxCategory {Name = "explosives", ItemIds = explosives});
-            itemids = new HashSet<int>(ItemManager.GetItemDefinitions().Where(k => k.category == ItemCategory.Component).Select(x => x.itemid)) {1523195708, 634478325};
+            itemids = new HashSet<int>(ItemManager.GetItemDefinitions().Where(k => k.category == ItemCategory.Component)
+                .Select(x => x.itemid)) {1523195708, 634478325};
             // added targeting computer, cctv
             itemids.Remove(-629028935); // remove electric fuse
             _skinbox.Add(854002617, new BoxCategory {Name = "components", ItemIds = itemids});
             _skinbox.Add(1588282308, new BoxCategory {Name = "electronics", ItemIds = electronics});
             _skinbox.Add(1686299197, new BoxCategory {Name = "keys", ItemIds = keys});
-            itemids = new HashSet<int>(ItemManager.GetItemDefinitions().Where(k => k.category == ItemCategory.Construction).Select(x => x.itemid));
-            itemids.UnionWith(new HashSet<int>(ItemManager.GetItemDefinitions().Where(k => k.category == ItemCategory.Items).Select(x => x.itemid)));
-            itemids.UnionWith(new HashSet<int>(ItemManager.GetItemDefinitions().Where(k => k.category == ItemCategory.Traps).Select(x => x.itemid)));
+            itemids = new HashSet<int>(ItemManager.GetItemDefinitions()
+                .Where(k => k.category == ItemCategory.Construction).Select(x => x.itemid));
+            itemids.UnionWith(new HashSet<int>(ItemManager.GetItemDefinitions()
+                .Where(k => k.category == ItemCategory.Items).Select(x => x.itemid)));
+            itemids.UnionWith(new HashSet<int>(ItemManager.GetItemDefinitions()
+                .Where(k => k.category == ItemCategory.Traps).Select(x => x.itemid)));
             itemids.UnionWith(misc);
-            _skinbox.Add(813563521, new BoxCategory {Name = "building", ItemIds = itemids}); 
+            _skinbox.Add(813563521, new BoxCategory {Name = "building", ItemIds = itemids});
             Interface.Oxide.DataFileSystem.WriteObject("BoxSorterLite", _skinbox);
-            
         }
-        
+
         #endregion init
-        
+
         #region hooks
 
         private void OnLootEntity(BasePlayer player, BaseEntity entity)
         {
-            if (!player.IsBuildingAuthed()  || !(entity is BoxStorage) || !permission.UserHasPermission(player.UserIDString, permUse) || entity.prefabID == 1560881570) return;
+            if (!player.IsBuildingAuthed() || !(entity is BoxStorage) ||
+                !permission.UserHasPermission(player.UserIDString, permUse) || entity.prefabID == 1560881570) return;
             CreateBoxUI(player, entity);
         }
-        
+
         private void OnPlayerLootEnd(PlayerLoot inventory)
         {
             var player = inventory.GetComponent<BasePlayer>();
@@ -172,16 +157,17 @@ namespace Oxide.Plugins
             CuiHelper.DestroyUi(player, "BoxUIContent");
             CuiHelper.DestroyUi(player, "BoxUISort");
         }
-        
+
         #endregion hooks
 
         #region CUI
-        
+
         private void CreateBoxUI(BasePlayer player, BaseEntity entity, int header = 0)
         {
             if (header == 0)
                 AddHeaderUI(player);
-            cuiContainer = ContainerOffset("BoxUIContent", "0.65 0.65 0.65 0.06", "0.5 0", "0.5 0", "192.5 16", "423 75.9");
+            cuiContainer = ContainerOffset("BoxUIContent", "0.65 0.65 0.65 0.06", "0.5 0", "0.5 0", "192.5 16",
+                "423 75.9");
             if (_skinbox.ContainsKey(entity.skinID) || entity.prefabID == 1844023509)
                 AddSelectedUI(player, entity);
             else
@@ -190,7 +176,7 @@ namespace Oxide.Plugins
 
         private void AddHeaderUI(BasePlayer player)
         {
-            cuiContainer = ContainerOffset("BoxUIHeader", "0.75 0.75 0.75 0.1", "0.5 0", "0.5 0", "192.5 78.5",
+            cuiContainer = ContainerOffset("BoxUIHeader", "0.86 0.86 0.86 0.2", "0.5 0", "0.5 0", "192.5 78.5",
                 "423 98");
             Label(ref cuiContainer, "BoxUIHeader", "<b>BOX SORTING</b>", "0.91 0.87 0.83 1.0", 13, "0.051 0", "1 0.95",
                 0f, TextAnchor.MiddleLeft);
@@ -201,24 +187,37 @@ namespace Oxide.Plugins
         private readonly StringBuilder xY1 = new StringBuilder();
         private readonly StringBuilder xY2 = new StringBuilder();
         private readonly StringBuilder cD = new StringBuilder();
+
         private void AddCategoryUI(BasePlayer player, CuiElementContainer container)
-        {            
-            Label(ref container, "BoxUIContent", lang.GetMessage("select", this, player.UserIDString), "0.91 0.87 0.83 1.0", 10, "0.02 0.76", "1 0.96", 0f, TextAnchor.UpperLeft);
+        {
+            Label(ref container, "BoxUIContent", lang.GetMessage("select", this, player.UserIDString),
+                "0.91 0.87 0.83 1.0", 10, "0.02 0.76", "1 0.96", 0f, TextAnchor.UpperLeft);
 
             const float x20 = 0.246f;
             const float x10 = 1 - 4.0f * x20;
             const float yspace = 0.25f;
-            
-            var x1 = x10;
-            var x2 = x20;
+
+            float x1 = x10;
+            float x2 = x20;
             var y2 = 0.75f;
-            var y1 = y2 - 0.2f;
+            float y1 = y2 - 0.2f;
             var count = 0;
             foreach (var box in _skinbox)
             {
-                xY1.Append(x1);xY1.Append(" ");xY1.Append(y1);xY2.Append(x2);xY2.Append(" ");xY2.Append(y2);cD.Append("boxsorter.select ");cD.Append(box.Key);
-                Button(ref container, "BoxUIContent", "0.65 0.65 0.65 0.06", lang.GetMessage(box.Value.Name, this, player.UserIDString), "0.77 0.77 0.77 1", 9, xY1.ToString(), xY2.ToString(), cD.ToString());
-                xY1.Length = 0;xY2.Length = 0;cD.Length = 0;
+                xY1.Append(x1);
+                xY1.Append(" ");
+                xY1.Append(y1);
+                xY2.Append(x2);
+                xY2.Append(" ");
+                xY2.Append(y2);
+                cD.Append("boxsorter.select ");
+                cD.Append(box.Key);
+                Button(ref container, "BoxUIContent", "0.65 0.65 0.65 0.06",
+                    lang.GetMessage(box.Value.Name, this, player.UserIDString), "0.77 0.77 0.77 1", 9, xY1.ToString(),
+                    xY2.ToString(), cD.ToString());
+                xY1.Length = 0;
+                xY2.Length = 0;
+                cD.Length = 0;
                 count++;
                 x1 += x20;
                 x2 += x20;
@@ -228,12 +227,12 @@ namespace Oxide.Plugins
                 y2 -= yspace;
                 x1 = x10;
                 x2 = x20;
-                
             }
+
             CuiHelper.DestroyUi(player, "BoxUIContent");
             CuiHelper.AddUi(player, container);
         }
-        
+
         private void AddSelectedUI(BasePlayer player, BaseEntity entity)
         {
             if (entity.prefabID == 1844023509) // refigerator
@@ -244,46 +243,46 @@ namespace Oxide.Plugins
             else
             {
                 boxContentName = _skinbox[entity.skinID].Name;
-                boxContentCommand = "boxsorter.select 0";
+                boxContentCommand = "boxsorter.select 969292267";
             }
-            Button(ref cuiContainer, "BoxUIContent", "0 0 0 0", lang.GetMessage(boxContentName, this, player.UserIDString), "0.77 0.77 0.77 1", 20, "0 0", "1 1", boxContentCommand);
+
+            Button(ref cuiContainer, "BoxUIContent", "0.65 0.65 0.65 0.12",
+                lang.GetMessage(boxContentName, this, player.UserIDString), "0.77 0.77 0.77 1", 20, "0 0", "1 1",
+                boxContentCommand);
             CuiHelper.DestroyUi(player, "BoxUIContent");
             CuiHelper.AddUi(player, cuiContainer);
-            cuiContainer = ContainerOffset("BoxUISort", "0.75 0.75 0.75 0.0", "0.5 0", "0.5 0", "75 341", "179 359");
-            Button(ref cuiContainer, "BoxUISort", "0.75 0.75 0.75 0.1", "<b>──></b>", "0.91 0.87 0.83 0.8", 11, "0 0", "0.48 1", "boxsorter.insert");
-            Button(ref cuiContainer, "BoxUISort", "0.415 0.5 0.258 0.4", "<b>Sort</b>", "0.607 0.705 0.431", 11, "0.52 0", "1 1", "boxsorter.sort");
+            cuiContainer = ContainerOffset("BoxUISort", "0.75 0.75 0.75 0", "0.5 0", "0.5 0", "75 341", "179 359");
+            Button(ref cuiContainer, "BoxUISort", "0.75 0.75 0.75 0.1", "<b>──></b>", "0.91 0.87 0.83 0.8", 11, "0 0",
+                "0.48 1", "boxsorter.insert");
+            Button(ref cuiContainer, "BoxUISort", "0.415 0.5 0.258 0.4", "<b>Sort</b>", "0.607 0.705 0.431", 11,
+                "0.52 0", "1 1", "boxsorter.sort");
             CuiHelper.DestroyUi(player, "BoxUISort");
             CuiHelper.AddUi(player, cuiContainer);
         }
-        
+
         [ConsoleCommand("boxsorter.sort")]
         private void CmdSort(ConsoleSystem.Arg arg)
         {
             var player = arg.Connection.player as BasePlayer;
             if (player == null) return;
-            var entity = player.inventory.loot.entitySource;
+            BaseEntity entity = player.inventory.loot.entitySource;
             if (entity == null || !player.IsBuildingAuthed()) return;
-            var inventory = player.inventory.loot.entitySource.GetComponent<StorageContainer>()?.inventory;
+            ItemContainer inventory = player.inventory.loot.entitySource.GetComponent<StorageContainer>()?.inventory;
             if (inventory == null) return;
             selectedItems = inventory.itemList.ToList();
             while (inventory.itemList.Count > 0)
                 inventory.itemList[0].RemoveFromContainer();
             selectedItems.Sort((x, y) => x.info.itemid.CompareTo(y.info.itemid));
             if (_skinbox.ContainsKey(entity.skinID))
-            {
-                foreach (var item in selectedItems)    
-                {
-                    if (!_skinbox[entity.skinID].ItemIds.Contains(item.info.itemid) && !player.inventory.containerMain.IsFull())
+                foreach (Item item in selectedItems)
+                    if (!_skinbox[entity.skinID].ItemIds.Contains(item.info.itemid) &&
+                        !player.inventory.containerMain.IsFull())
                         item.MoveToContainer(player.inventory.containerMain);
                     else
                         item.MoveToContainer(inventory);
-                }
-            }
             else if (entity.prefabID == 1844023509)
-            {
-                foreach (var item in selectedItems) 
-                   item.MoveToContainer(inventory);
-            }
+                foreach (Item item in selectedItems)
+                    item.MoveToContainer(inventory);
         }
 
         [ConsoleCommand("boxsorter.insert")]
@@ -291,31 +290,33 @@ namespace Oxide.Plugins
         {
             var player = arg.Connection.player as BasePlayer;
             if (player == null) return;
-            var entity = player.inventory.loot.entitySource;
+            BaseEntity entity = player.inventory.loot.entitySource;
             if (entity == null || !player.IsBuildingAuthed()) return;
-            var inventory = player.inventory.loot.entitySource.GetComponent<StorageContainer>()?.inventory;
+            ItemContainer inventory = player.inventory.loot.entitySource.GetComponent<StorageContainer>()?.inventory;
             if (inventory == null) return;
             selectedItems = new List<Item>();
             if (_skinbox.ContainsKey(entity.skinID))
-                selectedItems = player.inventory.containerMain.itemList.Where(x => _skinbox[entity.skinID].ItemIds.Contains(x.info.itemid)).ToList();
-            
+                selectedItems = player.inventory.containerMain.itemList
+                    .Where(x => _skinbox[entity.skinID].ItemIds.Contains(x.info.itemid)).ToList();
+
             else if (entity.prefabID == 1844023509)
-                selectedItems = player.inventory.containerMain.itemList.Where(x => x.info.category == ItemCategory.Food).ToList();
-            foreach (var item in selectedItems)
+                selectedItems = player.inventory.containerMain.itemList.Where(x => x.info.category == ItemCategory.Food)
+                    .ToList();
+            foreach (Item item in selectedItems)
             {
                 if (!item.CanMoveTo(inventory)) break;
                 item.MoveToContainer(inventory);
             }
-        } 
+        }
 
         [ConsoleCommand("boxsorter.select")]
         private void CmdSelect(ConsoleSystem.Arg arg)
         {
             var player = arg.Connection.player as BasePlayer;
             if (player == null) return;
-            var entity = player.inventory.loot.entitySource;
+            BaseEntity entity = player.inventory.loot.entitySource;
             if (entity == null || !player.IsBuildingAuthed()) return;
-            var inventory = player.inventory.loot.entitySource.GetComponent<StorageContainer>()?.inventory;
+            ItemContainer inventory = player.inventory.loot.entitySource.GetComponent<StorageContainer>()?.inventory;
             if (inventory == null) return;
             uint skinid;
             uint.TryParse(arg.Args[0], out skinid);
@@ -326,20 +327,23 @@ namespace Oxide.Plugins
         }
 
         #endregion CUI
-        
+
         #region CUI Helper 
-        
+
         //================================= [ Хомячок ] =======================================
-        
-        private static CuiElementContainer ContainerOffset(string panelName, string color, string aMin, string aMax, string offSetMin = "0 0", string offSetMax = "0 0", float fadein = 0f, bool useCursor = false, string parent = "Overlay")
+
+        private static CuiElementContainer ContainerOffset(string panelName, string color, string aMin, string aMax,
+            string offSetMin = "0 0", string offSetMax = "0 0", float fadein = 0f, bool useCursor = false,
+            string parent = "Overlay")
         {
-            var newElement = new CuiElementContainer()
+            var newElement = new CuiElementContainer
             {
                 {
                     new CuiPanel
                     {
                         Image = {Color = color, FadeIn = fadein},
-                        RectTransform = {AnchorMin = aMin, AnchorMax = aMax, OffsetMin = offSetMin, OffsetMax = offSetMax},
+                        RectTransform =
+                            {AnchorMin = aMin, AnchorMax = aMax, OffsetMin = offSetMin, OffsetMax = offSetMax},
                         CursorEnabled = useCursor
                     },
                     new CuiElement().Parent = parent,
@@ -349,15 +353,15 @@ namespace Oxide.Plugins
             return newElement;
         }
 
-        private void Panel(ref CuiElementContainer container, string panel, string color, string aMin, string aMax, float fadein = 0f, bool cursor = false)
+        private void Panel(ref CuiElementContainer container, string panel, string color, string aMin, string aMax,
+            float fadein = 0f, bool cursor = false)
         {
             container.Add(new CuiPanel
-            {
-
-                Image = { Color = color, FadeIn = fadein}, 
-                RectTransform = { AnchorMin = aMin, AnchorMax = aMax },
-                CursorEnabled = cursor,
-            },
+                {
+                    Image = {Color = color, FadeIn = fadein},
+                    RectTransform = {AnchorMin = aMin, AnchorMax = aMax},
+                    CursorEnabled = cursor
+                },
                 panel);
         }
 
@@ -365,8 +369,8 @@ namespace Oxide.Plugins
             int size, string aMin, string aMax, float fadein = 0f, TextAnchor align = TextAnchor.MiddleCenter)
         {
             container.Add(new CuiLabel
-            {
-                Text =
+                {
+                    Text =
                     {
                         FontSize = size,
                         Align = align,
@@ -375,18 +379,20 @@ namespace Oxide.Plugins
                         Font = "robotocondensed-regular.ttf",
                         FadeIn = fadein
                     },
-                RectTransform = { AnchorMin = aMin, AnchorMax = aMax }
-            },
+                    RectTransform = {AnchorMin = aMin, AnchorMax = aMax}
+                },
                 panel);
         }
 
-        private static void Button(ref CuiElementContainer container, string panel, string color, string text, string color1, int size, string aMin, string aMax, string command, TextAnchor align = TextAnchor.MiddleCenter)
+        private static void Button(ref CuiElementContainer container, string panel, string color, string text,
+            string color1, int size, string aMin, string aMax, string command,
+            TextAnchor align = TextAnchor.MiddleCenter)
         {
             container.Add(new CuiButton
-            {
-                Button = { Color = color, Command = command, FadeIn = 0f },
-                RectTransform = { AnchorMin = aMin, AnchorMax = aMax },
-                Text =
+                {
+                    Button = {Color = color, Command = command, FadeIn = 0f},
+                    RectTransform = {AnchorMin = aMin, AnchorMax = aMax},
+                    Text =
                     {
                         Text = text,
                         FontSize = size,
@@ -394,11 +400,9 @@ namespace Oxide.Plugins
                         Color = color1,
                         Font = "robotocondensed-regular.ttf"
                     }
-            },
+                },
                 panel);
         }
-
         #endregion CUI Helper
     }
-    
 }
